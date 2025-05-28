@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart House</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Reset dan font */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column; /* agar logo dan konten vertikal */
+      align-items: center;
+      color: #333;
+    }
+
+    #logo {
+      margin: 30px auto 20px auto;
+      max-width: 120px;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+      cursor: default;
+    }
+
+    #authContainer, #dataDiv {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      max-width: 400px;
+      width: 100%;
+      padding: 30px 35px;
+      box-sizing: border-box;
+      animation: fadeIn 0.5s ease forwards;
+      margin-bottom: 30px;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #4b0082;
+      font-weight: 600;
+      letter-spacing: 1.1px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      margin-top: 6px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #764ba2;
+      box-shadow: 0 0 5px #764ba2aa;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 25px;
+      background: #764ba2;
+      border: none;
+      color: white;
+      font-weight: 600;
+      font-size: 17px;
+      padding: 14px 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: 0 6px 12px rgba(118, 75, 162, 0.4);
+    }
+    button:hover {
+      background: #5a347a;
+      box-shadow: 0 8px 18px rgba(90, 52, 122, 0.6);
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #switchFormBtn {
+      background: transparent;
+      color: #764ba2;
+      font-weight: 600;
+      margin-top: 15px;
+      box-shadow: none;
+      padding: 10px 0;
+      border-radius: 0;
+      transition: color 0.3s ease;
+    }
+    #switchFormBtn:hover {
+      color: #4b0082;
+      text-decoration: underline;
+    }
+
+    .errorMsg {
+      color: #e74c3c;
+      margin-top: 10px;
+      font-weight: 600;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    /* Table style */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+    th {
+      background: #764ba2;
+      color: white;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #f3f0fa;
+    }
+
+    #logoutBtn {
+      background: #e74c3c;
+      margin-top: 0;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+    }
+    #logoutBtn:hover {
+      background: #c0392b;
+      box-shadow: 0 6px 18px rgba(192, 57, 43, 0.6);
+    }
+
+    /* Relay Switch Styles */
+    .relaySwitchContainer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 15px 0;
+      background: #f7f6fc;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .relaySwitchLabel {
+      font-weight: 600;
+      font-size: 16px;
+      color: #4b0082;
+    }
+    /* The switch - the box around the slider */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+
+    /* Hide default HTML checkbox */
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    /* The slider */
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    input:checked + .slider {
+      background-color: #764ba2;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      #authContainer, #dataDiv {
+        padding: 25px 20px;
+      }
+      button, input[type="email"], input[type="password"] {
+        font-size: 14px;
+      }
+      .relaySwitchLabel {
+        font-size: 14px;
+      }
+      .switch {
+        width: 44px;
+        height: 24px;
+      }
+      .slider:before {
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+      }
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logo tetap di atas -->
+  <img src="Logo.png" alt="Logo" id="logo" />
+
+  <div id="authContainer">
+    <!-- Register Form -->
+    <div id="registerDiv" style="display:none;">
+      <h2>Register Akun</h2>
+      <div id="errorMsgRegister" class="errorMsg"></div>
+      <label for="regEmail">Email</label>
+      <input type="email" id="regEmail" placeholder="Masukkan email" required />
+      <label for="regPassword">Password</label>
+      <input type="password" id="regPassword" placeholder="Minimal 6 karakter" required />
+      <button id="registerBtn">Daftar Sekarang</button>
+      <button id="switchToLoginBtn" type="button" id="switchFormBtn">Sudah punya akun? Login</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginDiv">
+      <h2>Login Akun</h2>
+      <div id="errorMsg" class="errorMsg"></div>
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Masukkan email" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Masukkan password" required />
+      <button id="loginBtn">Masuk</button>
+      <button id="switchToRegisterBtn" type="button" id="switchFormBtn">Belum punya akun? Register</button>
+    </div>
+  </div>
+
+  <div id="dataDiv" style="display:none;">
+    <h2>Data Sensor dari Firebase</h2>
+    <button id="logoutBtn">Logout</button>
+
+    <!-- Relay Switches -->
+    <div class="relaySwitchContainer">
+      <span class="relaySwitchLabel">Relay 1</span>
+      <label class="switch">
+        <input type="checkbox" id="relay1Switch" />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="relaySwitchContainer">
+      <span class="relaySwitchLabel">Relay 2</span>
+      <label class="switch">
+        <input type="checkbox" id="relay2Switch" />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Nilai</th>
+        </tr>
+      </thead>
+      <tbody id="dataTableBody">
+        <!-- Data muncul di sini -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // Firebase Config dan Inisialisasi sama dengan yang kamu punya (tidak diubah)
+   const firebaseConfig = {
+  apiKey: "AIzaSyAdqtt57QWPRIVpvQMRZJYdH5PlZBfXDRM",
+  authDomain: "jusde-dd005.firebaseapp.com",
+  databaseURL: "https://jusde-dd005-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jusde-dd005",
+  storageBucket: "jusde-dd005.firebasestorage.app",
+  messagingSenderId: "446277972595",
+  appId: "1:446277972595:web:a4f5f8aaf833f4781b7006"
+};
+
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // DOM Elements
+    const loginDiv = document.getElementById('loginDiv');
+    const registerDiv = document.getElementById('registerDiv');
+    const dataDiv = document.getElementById('dataDiv');
+
+    const errorMsgLogin = document.getElementById('errorMsg');
+    const errorMsgRegister = document.getElementById('errorMsgRegister');
+
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const switchToRegisterBtn = document.getElementById('switchToRegisterBtn');
+    const switchToLoginBtn = document.getElementById('switchToLoginBtn');
+
+    const dataTableBody = document.getElementById('dataTableBody');
+
+    // Relay switches
+    const relay1Switch = document.getElementById('relay1Switch');
+    const relay2Switch = document.getElementById('relay2Switch');
+
+    // Switch form login/register
+    switchToRegisterBtn.addEventListener('click', () => {
+      loginDiv.style.display = 'none';
+      registerDiv.style.display = 'block';
+      errorMsgLogin.textContent = '';
+      errorMsgRegister.textContent = '';
+    });
+    switchToLoginBtn.addEventListener('click', () => {
+      registerDiv.style.display = 'none';
+      loginDiv.style.display = 'block';
+      errorMsgLogin.textContent = '';
+      errorMsgRegister.textContent = '';
+    });
+
+    // Register
+    registerBtn.addEventListener('click', () => {
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      errorMsgRegister.textContent = '';
+
+      if (!email || !password) {
+        errorMsgRegister.textContent = 'Email dan password harus diisi.';
+        return;
+      }
+      if (password.length < 6) {
+        errorMsgRegister.textContent = 'Password minimal 6 karakter.';
+        return;
+      }
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          alert('Pendaftaran berhasil, silakan login.');
+          registerDiv.style.display = 'none';
+          loginDiv.style.display = 'block';
+        })
+        .catch(error => {
+          errorMsgRegister.textContent = error.message;
+        });
+    });
+
+    // Login
+    loginBtn.addEventListener('click', () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      errorMsgLogin.textContent = '';
+
+      if (!email || !password) {
+        errorMsgLogin.textContent = 'Email dan password harus diisi.';
+        return;
+      }
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          loginDiv.style.display = 'none';
+          registerDiv.style.display = 'none';
+          dataDiv.style.display = 'block';
+          listenData();
+        })
+        .catch(error => {
+          errorMsgLogin.textContent = error.message;
+        });
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      auth.signOut().then(() => {
+        dataDiv.style.display = 'none';
+        loginDiv.style.display = 'block';
+      });
+    });
+
+    // Update relay status to Firebase
+    function updateRelay(relayNumber, status) {
+      const path = `/relay${relayNumber}`;
+      db.ref(path).set(status ? 1 : 0)
+        .catch(error => {
+          alert('Gagal update relay: ' + error.message);
+        });
+    }
+
+    // Listen Firebase realtime data
+    function listenData() {
+      const path = '/';
+      db.ref(path).on('value', snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          dataTableBody.innerHTML = '<tr><td colspan="2">Tidak ada data</td></tr>';
+          relay1Switch.checked = false;
+          relay2Switch.checked = false;
+          return;
+        }
+
+        dataTableBody.innerHTML = '';
+        for (const key in data) {
+          if (data.hasOwnProperty(key)) {
+            const value = data[key];
+            dataTableBody.innerHTML += `
+              <tr>
+                <td>${key}</td>
+                <td>${value}</td>
+              </tr>
+            `;
+          }
+        }
+        // Update switch status sesuai data Firebase
+        if ('relay1' in data) relay1Switch.checked = !!data['relay1'];
+        if ('relay2' in data) relay2Switch.checked = !!data['relay2'];
+      });
+    }
+
+    // Relay switch event listener
+    relay1Switch.addEventListener('change', () => {
+      updateRelay(1, relay1Switch.checked);
+    });
+    relay2Switch.addEventListener('change', () => {
+      updateRelay(2, relay2Switch.checked);
+    });
+
+    // Jika sudah login sebelumnya, langsung tampilkan data
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginDiv.style.display = 'none';
+        registerDiv.style.display = 'none';
+        dataDiv.style.display = 'block';
+        listenData();
+      } else {
+        loginDiv.style.display = 'block';
+        registerDiv.style.display = 'none';
+        dataDiv.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
